@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-ThemeData appTheme = ThemeData(
-  primaryColor: Colors.indigo,
-  scaffoldBackgroundColor: const Color(0xfff5f6fa),
-  textTheme: GoogleFonts.poppinsTextTheme(),
-  inputDecorationTheme: InputDecorationTheme(
-    filled: true,
-    fillColor: Colors.white,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+class AppTheme {
+  static ThemeData theme = ThemeData(
+    useMaterial3: true,
+    colorSchemeSeed: Colors.blue,
+    scaffoldBackgroundColor: Colors.grey.shade100,
+    appBarTheme: const AppBarTheme(
+      centerTitle: true,
+      elevation: 0,
     ),
-  ),
-);
+  );
+}

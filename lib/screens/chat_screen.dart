@@ -1,48 +1,64 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/chat_service.dart';
+import '../widgets/message_bubble.dart';
 
-class ChatScreen extends StatelessWidget {
-  final msg = TextEditingController();
+class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
 
-  ChatScreen({super.key});
+  @override
+  State<ChatScreen> createState() => _ChatState();
+}
 
-  void send() {
-    FirebaseFirestore.instance.collection("chat").add({
-      "text": msg.text,
-      "user": FirebaseAuth.instance.currentUser!.email,
-      "time": DateTime.now()
-    });
+class _ChatState extends State<ChatScreen> {
+  final controller = TextEditingController();
 
-    msg.clear();
+  void send() async {
+    if (controller.text.trim().isEmpty) return;
+
+    await ChatService().sendMessage(controller.text.trim());
+    controller.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Chat Comunidade")),
+      appBar: AppBar(title: const Text("Chat da Comunidade")),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder(
-              stream:
-                  FirebaseFirestore.instance.collection("chat").snapshots(),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) return const SizedBox();
+              stream: ChatService().getMessages(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                return ListView(
-                  children: snapshot.data!.docs.map((d) {
-                    return ListTile(
-                      title: Text(d["text"]),
-                      subtitle: Text(d["user"]),
-                    );
-                  }).toList(),
+                final messages = snapshot.data!;
+
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: messages.length,
+                  itemBuilder: (_, i) {
+                    return MessageBubble(message: messages[i]);
+                  },
                 );
               },
             ),
           ),
-          TextField(controller: msg),
-          ElevatedButton(onPressed: send, child: const Text("Enviar"))
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(controller: controller),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: send,
+                )
+              ],
+            ),
+          )
         ],
       ),
     );

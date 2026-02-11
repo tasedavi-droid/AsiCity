@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,75 +9,53 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterState extends State<RegisterScreen> {
+
+  final name = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
-  final auth = AuthService();
 
-  void register() async {
-    await auth.register(email.text, password.text);
-    Navigator.pushReplacementNamed(context, "/home");
+  Future register() async {
+    await AuthService().register(
+      email.text,
+      password.text,
+      name.text,
+    );
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Criar Conta")),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      appBar: AppBar(title: const Text("Cadastro")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+
+            TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: "Nome"),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.person_add,
-                      size: 60, color: Colors.indigo),
 
-                  const SizedBox(height: 20),
-
-                  TextField(
-                    controller: email,
-                    decoration: const InputDecoration(
-                      labelText: "Email",
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: password,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: "Senha",
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: register,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text("Cadastrar"),
-                    ),
-                  ),
-                ],
-              ),
+            TextField(
+              controller: email,
+              decoration: const InputDecoration(labelText: "Email"),
             ),
-          ),
+
+            TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Senha"),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: register,
+              child: const Text("Cadastrar"),
+            )
+          ],
         ),
       ),
     );

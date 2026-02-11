@@ -9,13 +9,29 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginState extends State<LoginScreen> {
+
   final email = TextEditingController();
   final password = TextEditingController();
   final auth = AuthService();
 
-  void login() async {
-    await auth.login(email.text, password.text);
-    Navigator.pushReplacementNamed(context, "/home");
+  bool loading = false;
+
+  Future<void> login() async {
+    try {
+      setState(() => loading = true);
+
+      await auth.login(
+        email.text.trim(),
+        password.text.trim(),
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro ao logar: $e")),
+      );
+    }
+
+    setState(() => loading = false);
   }
 
   @override
@@ -35,14 +51,16 @@ class _LoginState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+
                     const Icon(Icons.location_city,
                         size: 70, color: Colors.indigo),
+
                     const SizedBox(height: 10),
 
                     const Text(
                       "AsiCity",
                       style:
-                          TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                     ),
 
                     const SizedBox(height: 30),
@@ -71,14 +89,10 @@ class _LoginState extends State<LoginScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: login,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text("Entrar"),
+                        onPressed: loading ? null : login,
+                        child: loading
+                            ? const CircularProgressIndicator()
+                            : const Text("Entrar"),
                       ),
                     ),
 

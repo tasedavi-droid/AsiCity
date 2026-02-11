@@ -1,27 +1,28 @@
 class MessageModel {
-  String text;
-  String userId;
-  DateTime time;
+  final String id;
+  final String text;
+  final String userId;
+  final DateTime createdAt;
 
   MessageModel({
+    required this.id,
     required this.text,
     required this.userId,
-    required this.time,
+    required this.createdAt,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      "text": text,
-      "userId": userId,
-      "time": time.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        "text": text,
+        "userId": userId,
+        "createdAt": createdAt,
+      };
 
-  factory MessageModel.fromMap(Map<String, dynamic> map) {
+  factory MessageModel.fromMap(String id, Map<String, dynamic> map) {
     return MessageModel(
+      id: id,
       text: map["text"],
       userId: map["userId"],
-      time: DateTime.parse(map["time"]),
+      createdAt: map["createdAt"].toDate(),
     );
   }
 }

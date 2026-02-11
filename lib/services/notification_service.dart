@@ -1,50 +1,20 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'auth_service.dart';
 
-class ChatScreen extends StatelessWidget {
-  final msg = TextEditingController();
+class NotificationService {
+  final _messaging = FirebaseMessaging.instance;
 
-  ChatScreen({super.key});
+  Future init() async {
+    await _messaging.requestPermission();
 
-  void send() {
-    FirebaseFirestore.instance.collection("chat").add({
-      "text": msg.text,
-      "user": FirebaseAuth.instance.currentUser!.email,
-      "time": DateTime.now()
-    });
+    String? token = await _messaging.getToken();
 
-    msg.clear();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Chat Comunidade")),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder(
-              stream:
-                  FirebaseFirestore.instance.collection("chat").snapshots(),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) return const SizedBox();
-
-                return ListView(
-                  children: snapshot.data!.docs.map((d) {
-                    return ListTile(
-                      title: Text(d["text"]),
-                      subtitle: Text(d["user"]),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ),
-          TextField(controller: msg),
-          ElevatedButton(onPressed: send, child: const Text("Enviar"))
-        ],
-      ),
-    );
+    if (token != null) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(AuthService().uid)
+          .update({"fcmToken": token});
+    }
   }
 }

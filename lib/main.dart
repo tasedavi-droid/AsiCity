@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'core/routes.dart';
+
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/create_report_screen.dart';
+import 'theme/theme.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,30 +16,51 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const AsiCityApp());
+  runApp(const MyApp());
 }
 
-class AsiCityApp extends StatelessWidget {
-  const AsiCityApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'AsiCity',
       debugShowCheckedModeBanner: false,
-      title: "AsiCity",
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        scaffoldBackgroundColor: const Color(0xfff5f6fa),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      initialRoute: "/login",
-      routes: appRoutes,
+      theme: AppTheme.lightTheme,
+
+      routes: {
+        "/login": (_) => const LoginScreen(),
+        "/home": (_) => const HomeScreen(),
+        "/create": (_) => const CreateReportScreen(),
+      },
+
+      home: const AuthGuard(),
+    );
+  }
+}
+
+class AuthGuard extends StatelessWidget {
+  const AuthGuard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasData) {
+          return const HomeScreen();
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

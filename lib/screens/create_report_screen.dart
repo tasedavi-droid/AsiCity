@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../services/location_service.dart';
-import '../services/storage_service.dart';
-import '../services/report_service.dart';
-import '../models/report_model.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../services/auth_service.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -15,62 +16,93 @@ class CreateReportScreen extends StatefulWidget {
 }
 
 class _CreateReportState extends State<CreateReportScreen> {
-  final desc = TextEditingController();
-  File? image;
+
+  final controller = TextEditingController();
+  File? selectedImage;
+
+  String selectedCategory = "Infraestrutura";
 
   final picker = ImagePicker();
-  final locationService = LocationService();
-  final storage = StorageService();
-  final reportService = ReportService();
 
-  Future pickImage() async {
-    final img = await picker.pickImage(source: ImageSource.camera);
-    if (img != null) {
-      setState(() => image = File(img.path));
+  Future<void> pickImage() async {
+    final image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() => selectedImage = File(image.path));
     }
   }
 
-  Future submit() async {
-    if (image == null) return;
+  Future<void> createReport() async {
 
-    final pos = await locationService.getLocation();
-    final url = await storage.uploadImage(image!);
+    final auth = AuthService();
+    if (auth.currentUser == null) return;
 
-    final report = ReportModel(
-      description: desc.text,
-      imageUrl: url,
-      lat: pos.latitude,
-      lng: pos.longitude,
-      userId: FirebaseAuth.instance.currentUser!.uid,
-    );
+    final pos = await Geolocator.getCurrentPosition();
 
-    await reportService.createReport(report);
+    String base64Img = "";
+
+    if (selectedImage != null) {
+      final bytes = await selectedImage!.readAsBytes();
+      base64Img = base64Encode(bytes);
+    }
+
+    await FirebaseFirestore.instance.collection("reports").add({
+      "description": controller.text,
+      "imageBase64": base64Img,
+      "userId": auth.uid,
+      "lat": pos.latitude,
+      "lng": pos.longitude,
+      "likes": 0,
+      "likedBy": [],
+      "category": selectedCategory,
+      "status": "Pendente",
+      "createdAt": Timestamp.now(),
+    });
+
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Novo Reporte")),
+      appBar: AppBar(title: const Text("Novo Report")),
+
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+
         child: Column(
           children: [
-            TextField(
-              controller: desc,
-              decoration: const InputDecoration(labelText: "Descrição"),
+
+            DropdownButton<String>(
+              value: selectedCategory,
+              items: [
+                "Infraestrutura",
+                "Segurança",
+                "Iluminação",
+                "Limpeza",
+                "Outros"
+              ].map((cat) {
+                return DropdownMenuItem(
+                  value: cat,
+                  child: Text(cat),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => selectedCategory = value!);
+              },
             ),
-            const SizedBox(height: 10),
 
-            image != null
-                ? Image.file(image!, height: 150)
-                : const Text("Nenhuma imagem"),
+            TextField(controller: controller),
 
             ElevatedButton(
-                onPressed: pickImage, child: const Text("Tirar Foto")),
+              onPressed: pickImage,
+              child: const Text("Foto"),
+            ),
 
             ElevatedButton(
-                onPressed: submit, child: const Text("Enviar Reporte"))
+              onPressed: createReport,
+              child: const Text("Enviar"),
+            )
           ],
         ),
       ),
