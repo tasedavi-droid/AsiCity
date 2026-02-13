@@ -1,85 +1,131 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/report_model.dart';
-import '../services/report_service.dart';
-import '../services/auth_service.dart';
 
-class ReportCard extends StatelessWidget {
+class ReportCard extends StatefulWidget {
 
   final ReportModel report;
 
-  const ReportCard({super.key, required this.report});
+  const ReportCard({
+    super.key,
+    required this.report,
+  });
 
-  Future openMaps() async {
-    final url = Uri.parse(
-        "https://www.google.com/maps/search/?api=1&query=${report.lat},${report.lng}");
-    await launchUrl(url);
-  }
-  
+  @override
+  State<ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<ReportCard> {
+
+  bool hovering = false;
 
   @override
   Widget build(BuildContext context) {
 
-    Uint8List? imageBytes;
+    return MouseRegion(
+      onEnter: (_) => setState(() => hovering = true),
+      onExit: (_) => setState(() => hovering = false),
 
-    if (report.imageBase64.isNotEmpty) {
-      try {
-        imageBytes = base64Decode(report.imageBase64);
-      } catch (_) {}
-    }
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        transform: hovering
+            ? (Matrix4.identity()..scale(1.02))
+            : Matrix4.identity(),
 
-    final liked = report.likedBy.contains(AuthService().uid);
+        child: Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          child: Padding(
+            padding: const EdgeInsets.all(16),
 
-          if (imageBytes != null)
-            Image.memory(imageBytes),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Text(report.description),
-          ),
+                /// 👤 USUÁRIO
+                Row(
+                  children: [
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text("Categoria: ${report.category}"),
-          ),
+                    const CircleAvatar(
+                      radius: 20,
+                      child: Icon(Icons.person),
+                    ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text("Status: ${report.status}"),
-          ),
+                    const SizedBox(width: 12),
 
-          Row(
-            children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
 
-              IconButton(
-                icon: Icon(
-                  liked ? Icons.favorite : Icons.favorite_border,
-                  color: liked ? Colors.red : null,
+                          Text(
+                            widget.report.userEmail ?? "Usuário",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+
+                          Text(
+                            _formatDate(widget.report.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: () {
-                  ReportService().toggleLike(report.id, report.likedBy);
-                },
-              ),
 
-              Text("${report.likes}"),
+                const SizedBox(height: 12),
 
-              IconButton(
-                icon: const Icon(Icons.map),
-                onPressed: openMaps,
-              ),
-            ],
-          )
-        ],
+                /// 🏷 CATEGORIA
+                Text(
+                  widget.report.category,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                /// 📝 DESCRIÇÃO
+                Text(
+                  widget.report.description,
+                  style: const TextStyle(fontSize: 15),
+                ),
+
+                /// 🖼 IMAGEM (SE EXISTIR)
+                if (widget.report.imageUrl != null &&
+                    widget.report.imageUrl!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(widget.report.imageUrl!),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
+  }
+
+  /// 📅 FORMATADOR DATA SEGURO
+  String _formatDate(Timestamp? timestamp) {
+
+    if (timestamp == null) return "Agora";
+
+    final date = timestamp.toDate();
+
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
   }
 }

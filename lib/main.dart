@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/create_report_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'core/routes.dart';
 import 'theme/theme.dart';
-
-import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,50 +11,30 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(const AsiCityApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AsiCityApp extends StatelessWidget {
+  const AsiCityApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AsiCity',
+      title: "AsiCity",
+
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
 
-      routes: {
-        "/login": (_) => const LoginScreen(),
-        "/home": (_) => const HomeScreen(),
-        "/create": (_) => const CreateReportScreen(),
-      },
+      theme: AppTheme.darkTheme,
 
-      home: const AuthGuard(),
-    );
-  }
-}
+      routes: AppRoutes.routes,
 
-class AuthGuard extends StatelessWidget {
-  const AuthGuard({super.key});
+      initialRoute: "/login",
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasData) {
-          return const HomeScreen();
-        }
-
-        return const LoginScreen();
+      builder: (context, child) {
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: child!,
+        );
       },
     );
   }

@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import '../widgets/message_bubble.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
 
   @override
-  State<CommunityChatScreen> createState() => _CommunityChatState();
+  State<CommunityChatScreen> createState() => _CommunityChatScreenState();
 }
 
-class _CommunityChatState extends State<CommunityChatScreen> {
+class _CommunityChatScreenState extends State<CommunityChatScreen> {
 
   final controller = TextEditingController();
+  final user = AuthService().currentUser;
 
   Future sendMessage() async {
 
-    final auth = AuthService();
-
     if (controller.text.trim().isEmpty) return;
 
-    await FirebaseFirestore.instance.collection("community_messages").add({
+    await FirebaseFirestore.instance.collection("community_chat").add({
       "text": controller.text.trim(),
-      "userId": auth.uid,
+      "userEmail": user?.email,
       "createdAt": Timestamp.now(),
     });
 
@@ -40,23 +40,33 @@ class _CommunityChatState extends State<CommunityChatScreen> {
           Expanded(
             child: StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection("community_messages")
-                  .orderBy("createdAt", descending: true)
+                  .collection("community_chat")
+                  .orderBy("createdAt")
                   .snapshots(),
-              builder: (context, snapshot) {
 
-                if (!snapshot.hasData) return const SizedBox();
+              builder: (_, snapshot) {
 
-                final docs = snapshot.data!.docs;
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = snapshot.data!.docs;
 
                 return ListView.builder(
-                  reverse: true,
-                  itemCount: docs.length,
+                  padding: const EdgeInsets.all(10),
+                  itemCount: messages.length,
                   itemBuilder: (_, i) {
-                    final msg = docs[i];
 
-                    return ListTile(
-                      title: Text(msg["text"]),
+                    final msg = messages[i];
+                    final isMe = msg["userEmail"] == user?.email;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: MessageBubble(
+                        message: msg["text"],
+                        userName: msg["userEmail"] ?? "Usuário",
+                        isMe: isMe,
+                      ),
                     );
                   },
                 );

@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/comment_service.dart';
 
 class ReplySection extends StatefulWidget {
-
   final String reportId;
   final String commentId;
 
@@ -18,18 +17,16 @@ class ReplySection extends StatefulWidget {
 }
 
 class _ReplySectionState extends State<ReplySection> {
-
   final controller = TextEditingController();
   final service = CommentService();
+
   bool showReply = false;
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         TextButton(
           child: const Text("Responder"),
           onPressed: () {
@@ -37,20 +34,20 @@ class _ReplySectionState extends State<ReplySection> {
           },
         ),
 
-        /// LISTA REPLIES
         StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: service.getReplies(widget.reportId, widget.commentId),
           builder: (context, snapshot) {
-
             if (!snapshot.hasData) return const SizedBox();
 
             final replies = snapshot.data!.docs;
 
             return Column(
               children: replies.map((reply) {
+                final data = reply.data();
+
                 return Padding(
                   padding: const EdgeInsets.only(left: 20),
-                  child: Text(reply["text"]),
+                  child: Text(data["text"] ?? ""),
                 );
               }).toList(),
             );
@@ -60,7 +57,6 @@ class _ReplySectionState extends State<ReplySection> {
         if (showReply)
           Row(
             children: [
-
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -73,7 +69,6 @@ class _ReplySectionState extends State<ReplySection> {
               IconButton(
                 icon: const Icon(Icons.send),
                 onPressed: () async {
-
                   if (controller.text.trim().isEmpty) return;
 
                   await service.createReply(

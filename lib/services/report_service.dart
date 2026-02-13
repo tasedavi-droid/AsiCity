@@ -6,34 +6,51 @@ class ReportService {
 
   final _db = FirebaseFirestore.instance;
 
+  /// 🔥 CRIAR REPORT
+  Future<void> createReport({
+    required String category,
+    required String description,
+    required double lat,
+    required double lng,
+    String? imageUrl,
+  }) async {
+
+    final user = AuthService().currentUser;
+    if (user == null) return;
+
+    if (description.trim().isEmpty) return;
+
+    final report = ReportModel(
+      id: "",
+      category: category,
+      description: description.trim(),
+      lat: lat,
+      lng: lng,
+      userEmail: user.email,
+      imageUrl: imageUrl,
+      createdAt: Timestamp.now(),
+    );
+
+    await _db.collection("reports").add(report.toMap());
+  }
+
+  /// 🔥 STREAM REPORTS
   Stream<List<ReportModel>> getReports({String? category}) {
 
-    Query query = _db.collection("reports").orderBy("createdAt", descending: true);
+    Query query = _db
+        .collection("reports")
+        .orderBy("createdAt", descending: true);
 
     if (category != null && category != "Todos") {
       query = query.where("category", isEqualTo: category);
     }
 
-    return query.snapshots().map((snap) =>
-        snap.docs.map((doc) =>
-            ReportModel.fromMap(doc.id, doc.data() as Map<String, dynamic>)).toList());
-  }
+    return query.snapshots().map((snapshot) {
 
-  Future toggleLike(String id, List likedBy) async {
+      return snapshot.docs.map((doc) {
+        return ReportModel.fromFirestore(doc);
+      }).toList();
 
-    final uid = AuthService().uid;
-    final doc = _db.collection("reports").doc(id);
-
-    if (likedBy.contains(uid)) {
-      await doc.update({
-        "likes": FieldValue.increment(-1),
-        "likedBy": FieldValue.arrayRemove([uid])
-      });
-    } else {
-      await doc.update({
-        "likes": FieldValue.increment(1),
-        "likedBy": FieldValue.arrayUnion([uid])
-      });
-    }
+    });
   }
 }

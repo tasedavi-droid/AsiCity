@@ -1,60 +1,107 @@
 import 'package:flutter/material.dart';
-import '../services/chat_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+
+  final String reportId;
+
+  const ChatScreen({super.key, required this.reportId});
 
   @override
-  State<ChatScreen> createState() => _ChatState();
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatState extends State<ChatScreen> {
-  final controller = TextEditingController();
+class _ChatScreenState extends State<ChatScreen> {
 
-  void send() async {
+  final controller = TextEditingController();
+  final user = AuthService().currentUser;
+
+  Future sendMessage() async {
+
     if (controller.text.trim().isEmpty) return;
 
-    await ChatService().sendMessage(controller.text.trim());
+    await FirebaseFirestore.instance
+        .collection("reports")
+        .doc(widget.reportId)
+        .collection("chat")
+        .add({
+      "text": controller.text.trim(),
+      "userEmail": user?.email,
+      "createdAt": Timestamp.now(),
+    });
+
     controller.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Chat da Comunidade")),
+      appBar: AppBar(title: const Text("Chat do Report")),
+
       body: Column(
         children: [
+
           Expanded(
-            child: StreamBuilder(
-              stream: ChatService().getMessages(),
-              builder: (context, snapshot) {
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection("reports")
+                  .doc(widget.reportId)
+                  .collection("chat")
+                  .orderBy("createdAt")
+                  .snapshots(),
+
+              builder: (_, snapshot) {
+
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final messages = snapshot.data!;
+                final messages = snapshot.data!.docs;
 
                 return ListView.builder(
-                  reverse: true,
+                  padding: const EdgeInsets.all(10),
                   itemCount: messages.length,
                   itemBuilder: (_, i) {
-                    return MessageBubble(message: messages[i]);
+
+                    final msg = messages[i];
+                    final data = msg.data() as Map<String, dynamic>;
+
+                    final isMe = data["userEmail"] == user?.email;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: MessageBubble(
+                        message: data["text"] ?? "",
+                        userName: data["userEmail"] ?? "Usuário",
+                        isMe: isMe,
+                      ),
+                    );
                   },
                 );
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8),
+
+          Container(
+            padding: const EdgeInsets.all(10),
             child: Row(
               children: [
+
                 Expanded(
-                  child: TextField(controller: controller),
+                  child: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: "Mensagem...",
+                    ),
+                  ),
                 ),
+
                 IconButton(
                   icon: const Icon(Icons.send),
-                  onPressed: send,
+                  onPressed: sendMessage,
                 )
               ],
             ),

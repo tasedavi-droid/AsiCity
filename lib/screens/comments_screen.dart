@@ -1,10 +1,8 @@
-import 'package:asicity/reply_section.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/comment_service.dart';
+import '../services/auth_service.dart';
 
 class CommentsScreen extends StatefulWidget {
-
   final String reportId;
 
   const CommentsScreen({super.key, required this.reportId});
@@ -16,13 +14,20 @@ class CommentsScreen extends StatefulWidget {
 class _CommentsScreenState extends State<CommentsScreen> {
 
   final controller = TextEditingController();
-  final service = CommentService();
 
   Future sendComment() async {
 
     if (controller.text.trim().isEmpty) return;
 
-    await service.createComment(widget.reportId, controller.text.trim());
+    await FirebaseFirestore.instance
+        .collection("reports")
+        .doc(widget.reportId)
+        .collection("comments")
+        .add({
+      "text": controller.text.trim(),
+      "userId": AuthService().uid,
+      "createdAt": Timestamp.now(),
+    });
 
     controller.clear();
   }
@@ -33,63 +38,71 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Comentários")),
 
-      body: Column(
-        children: [
+      body: SafeArea(
+        child: Column(
+          children: [
 
-          /// LISTA COMENTÁRIOS
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: service.getComments(widget.reportId),
-              builder: (context, snapshot) {
+            /// LISTA
+            Expanded(
+              child: StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection("reports")
+                    .doc(widget.reportId)
+                    .collection("comments")
+                    .orderBy("createdAt", descending: true)
+                    .snapshots(),
 
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                builder: (_, snapshot) {
 
-                final comments = snapshot.data!.docs;
+                  if (!snapshot.hasData) return const SizedBox();
 
-                return ListView.builder(
-                  itemCount: comments.length,
-                  itemBuilder: (context, index) {
+                  final docs = snapshot.data!.docs;
 
-                    final comment = comments[index];
+                  return ListView.builder(
+                    reverse: true,
+                    itemCount: docs.length,
+                    itemBuilder: (_, i) {
 
-                    return ListTile(
-                      title: Text(comment["text"]),
-                      subtitle: ReplySection(
-                        reportId: widget.reportId,
-                        commentId: comment.id,
-                      ),
-                    );
-                  },
-                );
-              },
+                      final data = docs[i];
+
+                      return ListTile(
+                        title: Text(data["text"]),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
 
-          /// INPUT
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
+            /// INPUT
+            Padding(
+              padding: EdgeInsets.only(
+                left: 12,
+                right: 12,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
 
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: "Comentar...",
+              child: Row(
+                children: [
+
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        hintText: "Escreva um comentário...",
+                      ),
                     ),
                   ),
-                ),
 
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: sendComment,
-                )
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: sendComment,
+                  )
+                ],
+              ),
             ),
-          )
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/theme.dart';
 
-class AppTheme {
-  static ThemeData theme = ThemeData(
-    useMaterial3: true,
-    colorSchemeSeed: Colors.blue,
-    scaffoldBackgroundColor: Colors.grey.shade100,
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
-      elevation: 0,
-    ),
-  );
+class CoreTheme {
+
+  static ThemeData get theme => AppTheme.darkTheme;
 }

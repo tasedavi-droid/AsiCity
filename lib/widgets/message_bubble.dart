@@ -1,29 +1,68 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../models/message_model.dart';
 
 class MessageBubble extends StatelessWidget {
-  final MessageModel message;
 
-  const MessageBubble({super.key, required this.message});
+  final String message;
+  final String userName;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.userName,
+    required this.isMe,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isMe = message.userId == AuthService().uid;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.blue : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(color: isMe ? Colors.white : Colors.black),
-        ),
+
+      child: Row(
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+
+        children: [
+
+          if (!isMe)
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.indigo,
+              child: Text(userName[0].toUpperCase()),
+            ),
+
+          const SizedBox(width: 8),
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(maxWidth: 260),
+            decoration: BoxDecoration(
+              color: isMe
+                  ? Colors.indigo
+                  : const Color(0xFF1F2937),
+
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(message),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/report_model.dart';
 import '../services/report_service.dart';
 import '../widgets/report_card.dart';
 
@@ -10,12 +11,10 @@ class ReportListScreen extends StatefulWidget {
 }
 
 class _ReportListState extends State<ReportListScreen> {
-
   String selectedCategory = "Todos";
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(title: const Text("Reports")),
 
@@ -31,19 +30,29 @@ class _ReportListState extends State<ReportListScreen> {
               "Iluminação",
               "Limpeza",
               "Outros"
-            ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            ]
+                .map((e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e),
+                    ))
+                .toList(),
             onChanged: (v) {
               setState(() => selectedCategory = v!);
             },
           ),
 
           Expanded(
-            child: StreamBuilder(
+            child: StreamBuilder<List<ReportModel>>(
               stream: ReportService().getReports(category: selectedCategory),
+
               builder: (context, snapshot) {
 
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text("Nenhum report encontrado"));
                 }
 
                 final reports = snapshot.data!;

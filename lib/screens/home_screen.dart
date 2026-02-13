@@ -1,40 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import 'report_list_screen.dart';
-import 'community_chat_screen.dart';
-import 'map_screen.dart';
+import '../models/report_model.dart';
+import '../services/report_service.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeState();
-}
-
-class _HomeState extends State<HomeScreen> {
-
-  int index = 0;
-
-  final screens = [
-    const ReportListScreen(),
-    const MapScreen(lat: 0.0, lng: 0.0),
-    const CommunityChatScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-      body: screens[index],
+      appBar: AppBar(
+        title: const Text("Mapa de Reports"),
+      ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (i) => setState(() => index = i),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.feed), label: "Feed"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Mapa"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Comunidade"),
-        ],
+      body: StreamBuilder<List<ReportModel>>(
+        stream: ReportService().getReports(),
+
+        builder: (context, snapshot) {
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Nenhum report encontrado"));
+          }
+
+          final reports = snapshot.data!;
+
+          final Set<Marker> markers = reports.map((report) {
+            return Marker(
+              markerId: MarkerId(report.id),
+              position: LatLng(report.lat, report.lng),
+              infoWindow: InfoWindow(
+                title: report.category,
+                snippet: report.description,
+              ),
+            );
+          }).toSet();
+
+          return GoogleMap(
+            initialCameraPosition: const CameraPosition(
+              target: LatLng(-22.4235, -45.4521),
+              zoom: 14,
+            ),
+            markers: markers,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+          );
+        },
       ),
     );
   }

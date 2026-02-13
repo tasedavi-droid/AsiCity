@@ -19,20 +19,20 @@ dependencies:
   cloud_firestore: ^5.6.12
   firebase_messaging: ^15.2.10
 
-  # 📍 LOCALIZAÇÃO + MAPAS
-  geolocator: ^10.1.0
-  url_launcher: ^6.2.5
+  # 📍 MAPAS
   google_maps_flutter: ^2.6.0
   flutter_map: ^6.0.0
   latlong2: ^0.9.0
+  geolocator: ^11.0.0
+  url_launcher: ^6.2.5
 
-  # 📸 CÂMERA / IMAGEM
+  # 📸 IMAGEM
   image_picker: ^1.0.7
 
-  # 🎨 FONTES
+  # 🎨 UI
   google_fonts: ^6.1.0
 
-  # 🧠 ESTADO E UTILIDADES
+  # 🧠 UTILIDADES
   provider: ^6.1.2
   intl: ^0.19.0
   uuid: ^4.5.1
