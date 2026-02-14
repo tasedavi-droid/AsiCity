@@ -1,25 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/message_model.dart';
 import 'auth_service.dart';
 
 class ChatService {
+
   final _db = FirebaseFirestore.instance;
 
-  Stream<List<MessageModel>> getMessages() {
-    return _db
-        .collection("chat")
-        .orderBy("createdAt", descending: true)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => MessageModel.fromMap(doc.id, doc.data()))
-            .toList());
+  /// 🔥 GERAR ID DO CHAT ENTRE DOIS USUÁRIOS
+  String generateChatId(String user1, String user2) {
+    return user1.hashCode <= user2.hashCode
+        ? "${user1}_$user2"
+        : "${user2}_$user1";
   }
 
-  Future sendMessage(String text) async {
-    await _db.collection("chat").add({
-      "text": text,
-      "userId": AuthService().uid,
-      "createdAt": DateTime.now()
+  /// 🔥 ENVIAR MENSAGEM
+  Future<void> sendMessage({
+    required String receiverId,
+    required String message,
+  }) async {
+
+    final user = AuthService().currentUser;
+    if (user == null) return;
+
+    final chatId = generateChatId(user.uid, receiverId);
+
+    await _db
+        .collection("chats")
+        .doc(chatId)
+        .collection("messages")
+        .add({
+      "senderId": user.uid,
+      "message": message,
+      "createdAt": Timestamp.now(),
     });
+  }
+
+  /// 🔥 STREAM DE MENSAGENS
+  Stream<QuerySnapshot> getMessages(String receiverId) {
+
+    final user = AuthService().currentUser;
+    if (user == null) {
+      return const Stream.empty();
+    }
+
+    final chatId = generateChatId(user.uid, receiverId);
+
+    return _db
+        .collection("chats")
+        .doc(chatId)
+        .collection("messages")
+        .orderBy("createdAt", descending: false)
+        .snapshots();
   }
 }

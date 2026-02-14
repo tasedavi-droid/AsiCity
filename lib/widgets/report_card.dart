@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/report_model.dart';
+import '../../models/report_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/report_service.dart';
+import '../../screens/comments_screen.dart';
 
-class ReportCard extends StatefulWidget {
+class ReportCard extends StatelessWidget {
 
   final ReportModel report;
 
@@ -13,119 +15,171 @@ class ReportCard extends StatefulWidget {
   });
 
   @override
-  State<ReportCard> createState() => _ReportCardState();
-}
-
-class _ReportCardState extends State<ReportCard> {
-
-  bool hovering = false;
-
-  @override
   Widget build(BuildContext context) {
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => hovering = true),
-      onExit: (_) => setState(() => hovering = false),
+    final user = AuthService().currentUser;
+    final isOwner = user?.uid == report.userId;
 
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        transform: hovering
-            ? (Matrix4.identity()..scale(1.02))
-            : Matrix4.identity(),
+    return Card(
+      margin: const EdgeInsets.all(12),
 
-        child: Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
 
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            /// 👤 USER
+            Row(
               children: [
 
-                /// 👤 USUÁRIO
-                Row(
-                  children: [
+                const CircleAvatar(child: Icon(Icons.person)),
 
-                    const CircleAvatar(
-                      radius: 20,
-                      child: Icon(Icons.person),
-                    ),
+                const SizedBox(width: 10),
 
-                    const SizedBox(width: 12),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-
-                          Text(
-                            widget.report.userEmail ?? "Usuário",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-
-                          Text(
-                            _formatDate(widget.report.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                /// 🏷 CATEGORIA
                 Text(
-                  widget.report.category,
+                  report.userName ?? "Usuário",
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const Spacer(),
 
-                /// 📝 DESCRIÇÃO
-                Text(
-                  widget.report.description,
-                  style: const TextStyle(fontSize: 15),
-                ),
+                /// ✏️ EDITAR
+                if (isOwner)
+                  PopupMenuButton(
+                    itemBuilder: (_) => [
 
-                /// 🖼 IMAGEM (SE EXISTIR)
-                if (widget.report.imageUrl != null &&
-                    widget.report.imageUrl!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(widget.report.imageUrl!),
-                    ),
-                  ),
+                      const PopupMenuItem(
+                        value: "edit",
+                        child: Text("Editar"),
+                      ),
+
+                      const PopupMenuItem(
+                        value: "delete",
+                        child: Text("Excluir"),
+                      ),
+                    ],
+
+                    onSelected: (value) {
+
+                      if (value == "delete") {
+
+                        ReportService().deleteReport(report.id);
+
+                      } else {
+
+                        _showEditDialog(context);
+                      }
+                    },
+                  )
               ],
             ),
-          ),
+
+            const SizedBox(height: 10),
+
+            Text(report.category,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+
+            const SizedBox(height: 6),
+
+            Text(report.description),
+
+            const SizedBox(height: 12),
+
+            /// ❤️ AÇÕES
+            Row(
+              children: [
+
+                IconButton(
+                  icon: const Icon(Icons.favorite),
+                  onPressed: () =>
+                      ReportService().toggleLike(report.id),
+                ),
+
+                Text(report.likesCount.toString()),
+
+                IconButton(
+                  icon: const Icon(Icons.comment),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CommentsScreen(reportId: report.id),
+                      ),
+                    );
+                  },
+                ),
+
+                Text(report.commentsCount.toString()),
+              ],
+            )
+          ],
         ),
       ),
     );
   }
 
-  /// 📅 FORMATADOR DATA SEGURO
-  String _formatDate(Timestamp? timestamp) {
+  /// 🔥 EDIT DIALOG
+  void _showEditDialog(BuildContext context) {
 
-    if (timestamp == null) return "Agora";
+    final descController = TextEditingController(text: report.description);
+    String category = report.category;
 
-    final date = timestamp.toDate();
+    showDialog(
+      context: context,
+      builder: (_) {
 
-    return "${date.day.toString().padLeft(2, '0')}/"
-        "${date.month.toString().padLeft(2, '0')}/"
-        "${date.year}";
+        return AlertDialog(
+          title: const Text("Editar Report"),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: "Descrição"),
+              ),
+
+              DropdownButtonFormField(
+                value: category,
+                items: [
+                  "Infraestrutura",
+                  "Segurança",
+                  "Iluminação",
+                  "Limpeza",
+                  "Outros"
+                ]
+                    .map((e) =>
+                        DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (v) => category = v!,
+              ),
+            ],
+          ),
+
+          actions: [
+
+            TextButton(
+              child: const Text("Salvar"),
+              onPressed: () {
+
+                ReportService().updateReport(
+                  reportId: report.id,
+                  category: category,
+                  description: descController.text,
+                );
+
+                Navigator.pop(context);
+              },
+            )
+          ],
+        );
+      },
+    );
   }
 }

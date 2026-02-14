@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../models/report_model.dart';
 import '../services/report_service.dart';
+import '../models/report_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,26 +11,19 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mapa de Reports"),
-      ),
+      appBar: AppBar(title: const Text("Mapa")),
 
       body: StreamBuilder<List<ReportModel>>(
         stream: ReportService().getReports(),
-
         builder: (context, snapshot) {
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Nenhum report encontrado"));
           }
 
           final reports = snapshot.data!;
 
-          final Set<Marker> markers = reports.map((report) {
+          final markers = reports.map((report) {
             return Marker(
               markerId: MarkerId(report.id),
               position: LatLng(report.lat, report.lng),
@@ -48,7 +41,6 @@ class HomeScreen extends StatelessWidget {
             ),
             markers: markers,
             myLocationEnabled: true,
-            myLocationButtonEnabled: true,
           );
         },
       ),

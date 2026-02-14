@@ -1,112 +1,104 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../services/auth_service.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
 
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final auth = AuthService();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
   bool loading = false;
 
   Future<void> login() async {
-    try {
-      setState(() => loading = true);
 
-      await auth.login(
-        email.text.trim(),
-        password.text.trim(),
-      );
+    setState(() => loading = true);
 
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro ao logar: $e")),
-      );
-    }
+    final error = await AuthService().login(
+      email: emailController.text,
+      password: passwordController.text,
+    );
 
     setState(() => loading = false);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+      body: Center(
+        child: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+
+              /// LOGO ASICITY
+              Icon(
+                Icons.location_city,
+                size: 80,
+                color: Theme.of(context).primaryColor,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
 
-                    const Icon(Icons.location_city,
-                        size: 70, color: Colors.indigo),
+              const SizedBox(height: 10),
 
-                    const SizedBox(height: 10),
-
-                    const Text(
-                      "AsiCity",
-                      style:
-                      TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    TextField(
-                      controller: email,
-                      decoration: const InputDecoration(
-                        labelText: "Email",
-                        prefixIcon: Icon(Icons.email),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    TextField(
-                      controller: password,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: "Senha",
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: loading ? null : login,
-                        child: loading
-                            ? const CircularProgressIndicator()
-                            : const Text("Entrar"),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, "/register"),
-                      child: const Text("Criar conta"),
-                    ),
-                  ],
+              const Text(
+                "AsiCity",
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
+
+              const SizedBox(height: 30),
+
+              TextField(
+                controller: emailController,
+                decoration:
+                    const InputDecoration(labelText: "Email"),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: "Senha"),
+              ),
+
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: loading ? null : login,
+                child: loading
+                    ? const CircularProgressIndicator()
+                    : const Text("Entrar"),
+              ),
+
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterScreen(),
+                    ),
+                  );
+                },
+                child: const Text("Criar conta"),
+              )
+            ],
           ),
         ),
       ),

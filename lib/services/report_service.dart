@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/report_model.dart';
 import 'auth_service.dart';
 
@@ -6,35 +7,31 @@ class ReportService {
 
   final _db = FirebaseFirestore.instance;
 
-  /// 🔥 CRIAR REPORT
-  Future<void> createReport({
-    required String category,
-    required String description,
-    required double lat,
-    required double lng,
-    String? imageUrl,
-  }) async {
-
-    final user = AuthService().currentUser;
-    if (user == null) return;
-
-    if (description.trim().isEmpty) return;
-
-    final report = ReportModel(
-      id: "",
-      category: category,
-      description: description.trim(),
-      lat: lat,
-      lng: lng,
-      userEmail: user.email,
-      imageUrl: imageUrl,
-      createdAt: Timestamp.now(),
-    );
-
-    await _db.collection("reports").add(report.toMap());
+  /// 🔥 CRIAR
+  Future createReport(Map<String, dynamic> data) async {
+    await _db.collection("reports").add(data);
   }
 
-  /// 🔥 STREAM REPORTS
+  /// 🔥 EDITAR
+  Future updateReport({
+    required String reportId,
+    required String category,
+    required String description,
+  }) async {
+
+    await _db.collection("reports").doc(reportId).update({
+      "category": category,
+      "description": description,
+    });
+  }
+
+  /// 🔥 EXCLUIR
+  Future deleteReport(String reportId) async {
+
+    await _db.collection("reports").doc(reportId).delete();
+  }
+
+  /// 🔥 STREAM
   Stream<List<ReportModel>> getReports({String? category}) {
 
     Query query = _db
@@ -47,10 +44,41 @@ class ReportService {
 
     return query.snapshots().map((snapshot) {
 
-      return snapshot.docs.map((doc) {
-        return ReportModel.fromFirestore(doc);
-      }).toList();
-
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     });
+  }
+
+  /// 🔥 LIKE
+  Future toggleLike(String reportId) async {
+
+    final user = AuthService().currentUser;
+    if (user == null) return;
+
+    final likeRef = _db
+        .collection("reports")
+        .doc(reportId)
+        .collection("likes")
+        .doc(user.uid);
+
+    final doc = await likeRef.get();
+
+    if (doc.exists) {
+
+      await likeRef.delete();
+
+      _db.collection("reports").doc(reportId).update({
+        "likesCount": FieldValue.increment(-1)
+      });
+
+    } else {
+
+      await likeRef.set({});
+
+      _db.collection("reports").doc(reportId).update({
+        "likesCount": FieldValue.increment(1)
+      });
+    }
   }
 }

@@ -1,20 +1,23 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'auth_service.dart';
 
 class NotificationService {
-  final _messaging = FirebaseMessaging.instance;
 
-  Future init() async {
-    await _messaging.requestPermission();
+  final _db = FirebaseFirestore.instance;
 
-    String? token = await _messaging.getToken();
+  Future sendNotification({
+    required String toUserId,
+    required String title,
+    required String message,
+    required String reportId,
+  }) async {
 
-    if (token != null) {
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(AuthService().uid)
-          .update({"fcmToken": token});
-    }
+    await _db.collection("notifications").add({
+      "toUserId": toUserId,
+      "title": title,
+      "message": message,
+      "reportId": reportId,
+      "read": false,
+      "createdAt": Timestamp.now(),
+    });
   }
 }

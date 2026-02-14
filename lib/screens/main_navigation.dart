@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'home_screen.dart';
 import 'report_list_screen.dart';
 import 'create_report_screen.dart';
 import 'community_chat_screen.dart';
@@ -18,9 +17,6 @@ class _MainNavigationState extends State<MainNavigation> {
   int currentIndex = 0;
 
   final List<Widget> screens = const [
-
-    /// 🗺️ Mapa
-    HomeScreen(),
 
     /// 📄 Feed Reports
     ReportListScreen(),
@@ -43,22 +39,14 @@ class _MainNavigationState extends State<MainNavigation> {
       body: screens[currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
-
         currentIndex: currentIndex,
         type: BottomNavigationBarType.fixed,
 
         onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
+          setState(() => currentIndex = index);
         },
 
         items: const [
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: "Mapa",
-          ),
 
           BottomNavigationBarItem(
             icon: Icon(Icons.list),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../services/auth_service.dart';
-import '../widgets/message_bubble.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
@@ -12,20 +12,34 @@ class CommunityChatScreen extends StatefulWidget {
 
 class _CommunityChatScreenState extends State<CommunityChatScreen> {
 
-  final controller = TextEditingController();
-  final user = AuthService().currentUser;
+  final messageController = TextEditingController();
+  final auth = AuthService();
 
-  Future sendMessage() async {
+  Future<void> sendMessage() async {
 
-    if (controller.text.trim().isEmpty) return;
+    final user = auth.currentUser;
+    if (user == null) return;
 
-    await FirebaseFirestore.instance.collection("community_chat").add({
-      "text": controller.text.trim(),
-      "userEmail": user?.email,
+    if (messageController.text.trim().isEmpty) return;
+
+    /// Buscar username
+    final userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    final userName = userDoc.data()?["userName"] ?? "Usuário";
+
+    await FirebaseFirestore.instance
+        .collection("community_messages")
+        .add({
+      "userId": user.uid,
+      "userName": userName,
+      "message": messageController.text.trim(),
       "createdAt": Timestamp.now(),
     });
 
-    controller.clear();
+    messageController.clear();
   }
 
   @override
@@ -37,36 +51,41 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
       body: Column(
         children: [
 
+          /// LISTA MENSAGENS
           Expanded(
-            child: StreamBuilder(
+            child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection("community_chat")
-                  .orderBy("createdAt")
+                  .collection("community_messages")
+                  .orderBy("createdAt", descending: true)
                   .snapshots(),
 
-              builder: (_, snapshot) {
+              builder: (context, snapshot) {
 
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final messages = snapshot.data!.docs;
+                final docs = snapshot.data!.docs;
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(10),
-                  itemCount: messages.length,
+                  reverse: true,
+                  itemCount: docs.length,
                   itemBuilder: (_, i) {
 
-                    final msg = messages[i];
-                    final isMe = msg["userEmail"] == user?.email;
+                    final data = docs[i].data() as Map<String, dynamic>;
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: MessageBubble(
-                        message: msg["text"],
-                        userName: msg["userEmail"] ?? "Usuário",
-                        isMe: isMe,
+                    return ListTile(
+
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.person),
                       ),
+
+                      title: Text(
+                        data["userName"] ?? "Usuário",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+
+                      subtitle: Text(data["message"] ?? ""),
                     );
                   },
                 );
@@ -74,14 +93,15 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
             ),
           ),
 
-          Container(
+          /// INPUT
+          Padding(
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
 
                 Expanded(
                   child: TextField(
-                    controller: controller,
+                    controller: messageController,
                     decoration: const InputDecoration(
                       hintText: "Digite uma mensagem...",
                     ),

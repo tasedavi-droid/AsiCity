@@ -6,37 +6,74 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Stream<User?> get authState => _auth.authStateChanges();
-
   User? get currentUser => _auth.currentUser;
 
-  String get uid {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw Exception("Usuário não está logado");
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// LOGIN
+  Future<String?> login({
+    required String email,
+    required String password,
+  }) async {
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
     }
-    return user.uid;
   }
 
-  Future<void> login(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+  /// REGISTER
+  Future<String?> register({
+    required String email,
+    required String password,
+  }) async {
+
+    try {
+      final credential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+
+      /// cria doc do usuário
+      await _db.collection("users").doc(credential.user!.uid).set({
+        "userName": "",
+        "email": email
+      });
+
+      return null;
+
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    }
   }
 
-  Future<void> register(String email, String password, String name) async {
+  /// SALVAR USERNAME
+  Future<void> saveUserName(String name) async {
 
-    final cred = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    final user = currentUser;
+    if (user == null) return;
 
-    await _db.collection("users").doc(cred.user!.uid).set({
-      "name": name,
-      "email": email,
-      "createdAt": Timestamp.now()
+    await _db.collection("users").doc(user.uid).update({
+      "userName": name.trim(),
     });
+  }
+
+  /// PEGAR USERNAME
+  Future<String?> getUserName() async {
+
+    final user = currentUser;
+    if (user == null) return null;
+
+    final doc =
+        await _db.collection("users").doc(user.uid).get();
+
+    return doc.data()?['userName'];
   }
 
   Future<void> logout() async {
