@@ -44,4 +44,19 @@ class ReportModel {
       createdAt: data["createdAt"],
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      "category": category,
+      "description": description,
+      "lat": lat,
+      "lng": lng,
+      "userId": userId,
+      "userName": userName,
+      "imageBase64": imageBase64,
+      "likesCount": likesCount,
+      "commentsCount": commentsCount,
+      "createdAt": createdAt ?? Timestamp.now(),
+    };
+  }
 }

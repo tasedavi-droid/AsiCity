@@ -4,9 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
-
   final String reportId;
-
   const ChatScreen({super.key, required this.reportId});
 
   @override
@@ -14,12 +12,10 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   final controller = TextEditingController();
   final user = AuthService().currentUser;
 
   Future sendMessage() async {
-
     if (controller.text.trim().isEmpty) return;
 
     await FirebaseFirestore.instance
@@ -37,13 +33,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(title: const Text("Chat do Report")),
-
       body: Column(
         children: [
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -52,12 +45,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   .collection("chat")
                   .orderBy("createdAt")
                   .snapshots(),
-
               builder: (_, snapshot) {
-
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                 final messages = snapshot.data!.docs;
 
@@ -65,10 +54,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   padding: const EdgeInsets.all(10),
                   itemCount: messages.length,
                   itemBuilder: (_, i) {
-
                     final msg = messages[i];
                     final data = msg.data() as Map<String, dynamic>;
-
                     final isMe = data["userEmail"] == user?.email;
 
                     return Padding(
@@ -84,25 +71,12 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-
           Container(
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: "Mensagem...",
-                    ),
-                  ),
-                ),
-
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: sendMessage,
-                )
+                Expanded(child: TextField(controller: controller, decoration: const InputDecoration(hintText: "Mensagem..."))),
+                IconButton(icon: const Icon(Icons.send), onPressed: sendMessage)
               ],
             ),
           )

@@ -16,13 +16,16 @@ class _CreateUsernameScreenState
   final controller = TextEditingController();
   bool loading = false;
 
-  Future<void> save() async {
+  Future<void> saveUserName() async {
 
     if (controller.text.trim().isEmpty) return;
 
     setState(() => loading = true);
 
-    await AuthService().saveUserName(controller.text);
+    await AuthService()
+        .updateUsername(controller.text.trim());
+
+    setState(() => loading = false);
 
     if (!mounted) return;
 
@@ -38,27 +41,30 @@ class _CreateUsernameScreenState
   Widget build(BuildContext context) {
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Escolha seu nome")),
+      appBar: AppBar(title: const Text("Criar nome")),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           children: [
 
             TextField(
               controller: controller,
-              decoration:
-                  const InputDecoration(labelText: "Username"),
+              decoration: const InputDecoration(
+                labelText: "Nome público",
+              ),
             ),
 
             const SizedBox(height: 20),
 
             ElevatedButton(
-              onPressed: loading ? null : save,
+              onPressed:
+                  loading ? null : saveUserName,
               child: loading
                   ? const CircularProgressIndicator()
                   : const Text("Salvar"),
-            )
+            ),
           ],
         ),
       ),

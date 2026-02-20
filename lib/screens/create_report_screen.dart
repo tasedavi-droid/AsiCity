@@ -1,71 +1,57 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
-
+import '../models/report_model.dart';
+import '../services/report_service.dart';
 import '../services/auth_service.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
 
   @override
-  State<CreateReportScreen> createState() => _CreateReportState();
+  State<CreateReportScreen> createState() =>
+      _CreateReportScreenState();
 }
 
-class _CreateReportState extends State<CreateReportScreen> {
+class _CreateReportScreenState
+    extends State<CreateReportScreen> {
 
   final controller = TextEditingController();
-  String selectedCategory = "Outros";
 
-  String? imageBase64;
-
+  String selectedCategory = "Infraestrutura";
   bool loading = false;
 
-  final picker = ImagePicker();
+  final categories = [
+    "Infraestrutura",
+    "Iluminação",
+    "Segurança",
+    "Trânsito",
+    "Limpeza",
+    "Outros",
+  ];
 
-  /// PICK IMAGE WEB + MOBILE
-  Future pickImage() async {
-
-    final image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image == null) return;
-
-    final bytes = await image.readAsBytes();
-
-    setState(() {
-      imageBase64 = base64Encode(bytes);
-    });
-  }
-
-  Future createReport() async {
+  Future<void> createReport() async {
 
     final user = AuthService().currentUser;
     if (user == null) return;
 
-    if (controller.text.trim().isEmpty) return;
+    final username =
+        await AuthService().getUsername(user.uid);
 
     setState(() => loading = true);
 
-    /// BUSCAR USERNAME
-    final userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .get();
+    final report = ReportModel(
+      id: "",
+      category: selectedCategory,
+      description: controller.text.trim(),
+      lat: 0,
+      lng: 0,
+      userId: user.uid,
+      userName: username,
+      createdAt: null,
+    );
 
-    final userName = userDoc.data()?["userName"] ?? "Usuário";
+    await ReportService().createReport(report);
 
-    await FirebaseFirestore.instance.collection("reports").add({
-      "description": controller.text.trim(),
-      "category": selectedCategory,
-      "imageBase64": imageBase64 ?? "",
-      "userId": user.uid,
-      "userName": userName,
-      "likesCount": 0,
-      "commentsCount": 0,
-      "lat": 0,
-      "lng": 0,
-      "createdAt": Timestamp.now(),
-    });
+    setState(() => loading = false);
 
     if (!mounted) return;
 
@@ -81,52 +67,41 @@ class _CreateReportState extends State<CreateReportScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
 
-        child: ListView(
+        child: Column(
           children: [
-
-            if (imageBase64 != null)
-              Image.memory(base64Decode(imageBase64!)),
-
-            ElevatedButton.icon(
-              onPressed: pickImage,
-              icon: const Icon(Icons.image),
-              label: const Text("Adicionar imagem"),
-            ),
-
-            const SizedBox(height: 20),
 
             DropdownButtonFormField(
               value: selectedCategory,
-              items: [
-                "Infraestrutura",
-                "Segurança",
-                "Iluminação",
-                "Limpeza",
-                "Outros"
-              ]
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              items: categories
+                  .map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c),
+                      ))
                   .toList(),
-              onChanged: (v) => setState(() => selectedCategory = v!),
+              onChanged: (v) =>
+                  setState(() =>
+                      selectedCategory = v!),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             TextField(
               controller: controller,
+              maxLines: 5,
               decoration: const InputDecoration(
-                labelText: "Descrição",
+                hintText: "Descreva o problema",
               ),
-              maxLines: 4,
             ),
 
             const SizedBox(height: 20),
 
-            loading
-                ? const Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-                    onPressed: createReport,
-                    child: const Text("Publicar"),
-                  ),
+            ElevatedButton(
+              onPressed:
+                  loading ? null : createReport,
+              child: loading
+                  ? const CircularProgressIndicator()
+                  : const Text("Publicar"),
+            ),
           ],
         ),
       ),

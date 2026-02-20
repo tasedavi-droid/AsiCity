@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
@@ -11,56 +10,53 @@ class CommunityChatScreen extends StatefulWidget {
 }
 
 class _CommunityChatScreenState extends State<CommunityChatScreen> {
+  final TextEditingController controller = TextEditingController();
 
-  final messageController = TextEditingController();
-  final auth = AuthService();
+  String formatTime(Timestamp? timestamp) {
+    if (timestamp == null) return "";
 
-  Future<void> sendMessage() async {
+    final date = timestamp.toDate();
+    return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+  }
 
-    final user = auth.currentUser;
-    if (user == null) return;
+  Future<String> getUserName() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    if (messageController.text.trim().isEmpty) return;
+    final doc =
+        await FirebaseFirestore.instance.collection("users").doc(uid).get();
 
-    /// Buscar username
-    final userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .get();
+    return doc.data()?["userName"] ?? "Usuário";
+  }
 
-    final userName = userDoc.data()?["userName"] ?? "Usuário";
+  void sendMessage() async {
+    if (controller.text.trim().isEmpty) return;
 
-    await FirebaseFirestore.instance
-        .collection("community_messages")
-        .add({
-      "userId": user.uid,
-      "userName": userName,
-      "message": messageController.text.trim(),
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final name = await getUserName();
+
+    await FirebaseFirestore.instance.collection("communityChat").add({
+      "message": controller.text.trim(),
+      "userId": uid,
+      "userName": name,
       "createdAt": Timestamp.now(),
     });
 
-    messageController.clear();
+    controller.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Comunidade")),
-
+      appBar: AppBar(title: const Text("Chat da Comunidade")),
       body: Column(
         children: [
-
-          /// LISTA MENSAGENS
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
+            child: StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection("community_messages")
+                  .collection("communityChat")
                   .orderBy("createdAt", descending: true)
                   .snapshots(),
-
               builder: (context, snapshot) {
-
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -70,22 +66,14 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 return ListView.builder(
                   reverse: true,
                   itemCount: docs.length,
-                  itemBuilder: (_, i) {
-
-                    final data = docs[i].data() as Map<String, dynamic>;
+                  itemBuilder: (context, index) {
+                    final data = docs[index];
 
                     return ListTile(
-
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person),
-                      ),
-
-                      title: Text(
-                        data["userName"] ?? "Usuário",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-
-                      subtitle: Text(data["message"] ?? ""),
+                      title: Text(data["userName"] ?? "Usuário"),
+                      subtitle: Text(data["message"]),
+                      trailing:
+                          Text(formatTime(data["createdAt"])),
                     );
                   },
                 );
@@ -93,27 +81,20 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
             ),
           ),
 
-          /// INPUT
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-
-                Expanded(
-                  child: TextField(
-                    controller: messageController,
-                    decoration: const InputDecoration(
-                      hintText: "Digite uma mensagem...",
-                    ),
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  decoration:
+                      const InputDecoration(hintText: "Mensagem..."),
                 ),
-
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: sendMessage,
-                )
-              ],
-            ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: sendMessage,
+              )
+            ],
           )
         ],
       ),

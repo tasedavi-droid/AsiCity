@@ -1,48 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-import '../services/report_service.dart';
-import '../models/report_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Mapa")),
+      appBar: AppBar(
+        title: const Text("AsiCity"),
+        centerTitle: true,
+      ),
 
-      body: StreamBuilder<List<ReportModel>>(
-        stream: ReportService().getReports(),
-        builder: (context, snapshot) {
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
 
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            const SizedBox(height: 20),
 
-          final reports = snapshot.data!;
-
-          final markers = reports.map((report) {
-            return Marker(
-              markerId: MarkerId(report.id),
-              position: LatLng(report.lat, report.lng),
-              infoWindow: InfoWindow(
-                title: report.category,
-                snippet: report.description,
+            const Text(
+              "Bem-vindo ao AsiCity",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          }).toSet();
-
-          return GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(-22.4235, -45.4521),
-              zoom: 14,
             ),
-            markers: markers,
-            myLocationEnabled: true,
-          );
-        },
+
+            const SizedBox(height: 30),
+
+            _homeButton(
+              context,
+              title: "Ver Reports",
+              icon: Icons.report,
+              route: "/reports",
+            ),
+
+            _homeButton(
+              context,
+              title: "Chat da Comunidade",
+              icon: Icons.chat,
+              route: "/community_chat",
+            ),
+
+            _homeButton(
+              context,
+              title: "Perfil",
+              icon: Icons.person,
+              route: "/profile",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _homeButton(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required String route,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SizedBox(
+        width: double.infinity,
+        height: 60,
+        child: ElevatedButton.icon(
+          icon: Icon(icon),
+          label: Text(title),
+          onPressed: () {
+            Navigator.pushNamed(context, route);
+          },
+        ),
       ),
     );
   }

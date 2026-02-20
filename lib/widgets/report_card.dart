@@ -1,185 +1,116 @@
 import 'package:flutter/material.dart';
-
-import '../../models/report_model.dart';
-import '../../services/auth_service.dart';
-import '../../services/report_service.dart';
-import '../../screens/comments_screen.dart';
+import '../models/report_model.dart';
+import '../services/report_service.dart';
+import '../services/auth_service.dart';
 
 class ReportCard extends StatelessWidget {
 
   final ReportModel report;
+  final VoidCallback? onOpenComments;
 
   const ReportCard({
     super.key,
     required this.report,
+    this.onOpenComments,
   });
 
   @override
   Widget build(BuildContext context) {
 
-    final user = AuthService().currentUser;
-    final isOwner = user?.uid == report.userId;
+    final currentUser =
+        AuthService().currentUser;
+
+    final isOwner =
+        currentUser?.uid == report.userId;
 
     return Card(
-      margin: const EdgeInsets.all(12),
+      margin: const EdgeInsets.all(10),
 
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
 
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
 
-            /// 👤 USER
             Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
               children: [
-
-                const CircleAvatar(child: Icon(Icons.person)),
-
-                const SizedBox(width: 10),
-
                 Text(
-                  report.userName ?? "Usuário",
+                  report.userName ??
+                      "Usuário",
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                      fontWeight:
+                          FontWeight.bold),
                 ),
 
-                const Spacer(),
-
-                /// ✏️ EDITAR
                 if (isOwner)
                   PopupMenuButton(
                     itemBuilder: (_) => [
-
-                      const PopupMenuItem(
-                        value: "edit",
-                        child: Text("Editar"),
-                      ),
-
                       const PopupMenuItem(
                         value: "delete",
-                        child: Text("Excluir"),
-                      ),
+                        child: Text("Deletar"),
+                      )
                     ],
-
-                    onSelected: (value) {
-
+                    onSelected: (value) async {
                       if (value == "delete") {
-
-                        ReportService().deleteReport(report.id);
-
-                      } else {
-
-                        _showEditDialog(context);
+                        await ReportService()
+                            .deleteReport(
+                                report.id);
                       }
                     },
                   )
               ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            Text(report.category,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(report.category),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
 
             Text(report.description),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            /// ❤️ AÇÕES
             Row(
               children: [
 
                 IconButton(
-                  icon: const Icon(Icons.favorite),
-                  onPressed: () =>
-                      ReportService().toggleLike(report.id),
-                ),
+                  icon:
+                      const Icon(Icons.thumb_up),
+                  onPressed: () async {
 
-                Text(report.likesCount.toString()),
+                    final user =
+                        AuthService()
+                            .currentUser;
 
-                IconButton(
-                  icon: const Icon(Icons.comment),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            CommentsScreen(reportId: report.id),
-                      ),
+                    if (user == null) return;
+
+                    await ReportService()
+                        .addInteraction(
+                      reportId: report.id,
+                      userId: user.uid,
+                      type: "like",
                     );
                   },
                 ),
 
-                Text(report.commentsCount.toString()),
+                Text(
+                    report.likesCount.toString()),
+
+                IconButton(
+                  icon:
+                      const Icon(Icons.comment),
+                  onPressed: onOpenComments,
+                ),
               ],
             )
           ],
         ),
       ),
-    );
-  }
-
-  /// 🔥 EDIT DIALOG
-  void _showEditDialog(BuildContext context) {
-
-    final descController = TextEditingController(text: report.description);
-    String category = report.category;
-
-    showDialog(
-      context: context,
-      builder: (_) {
-
-        return AlertDialog(
-          title: const Text("Editar Report"),
-
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: "Descrição"),
-              ),
-
-              DropdownButtonFormField(
-                value: category,
-                items: [
-                  "Infraestrutura",
-                  "Segurança",
-                  "Iluminação",
-                  "Limpeza",
-                  "Outros"
-                ]
-                    .map((e) =>
-                        DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (v) => category = v!,
-              ),
-            ],
-          ),
-
-          actions: [
-
-            TextButton(
-              child: const Text("Salvar"),
-              onPressed: () {
-
-                ReportService().updateReport(
-                  reportId: report.id,
-                  category: category,
-                  description: descController.text,
-                );
-
-                Navigator.pop(context);
-              },
-            )
-          ],
-        );
-      },
     );
   }
 }

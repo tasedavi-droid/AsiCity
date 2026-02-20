@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "358270623507",
+    "project_id": "asicity",
+    "storage_bucket": "asicity.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:358270623507:android:7e60b0ac18b00f1e8144e6",
+        "android_client_info": {
+          "package_name": "com.example.asicity"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAw-0I37eHbB5oh1xQitoXqJhZAALzKQm0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

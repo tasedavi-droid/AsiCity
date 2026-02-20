@@ -1,79 +1,118 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileState();
+  State<ProfileScreen> createState() =>
+      _ProfileScreenState();
 }
 
-class _ProfileState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> {
 
   final controller = TextEditingController();
-  bool loading = false;
+  String? currentName;
+  bool loading = true;
 
-  Future<void> saveUserName() async {
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
 
     final user = AuthService().currentUser;
-    if (user == null) return;
+
+    if (user != null) {
+      currentName =
+          await AuthService().getUsername(user.uid);
+    }
+
+    setState(() => loading = false);
+  }
+
+  Future<void> save() async {
 
     if (controller.text.trim().isEmpty) return;
 
-    setState(() => loading = true);
+    await AuthService()
+        .updateUsername(controller.text.trim());
 
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .set({
-          "userName": controller.text.trim(),
-        }, SetOptions(merge: true));
+    controller.clear();
+    await loadUser();
+  }
 
-    setState(() => loading = false);
+  Future<void> logout() async {
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Nome salvo!")),
+    await AuthService().logout();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (_) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
 
+    if (loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("Perfil")),
 
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
+
         child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
+
+            Text(
+              "Nome atual:",
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              currentName ?? "Sem nome definido",
+              style: const TextStyle(fontSize: 18),
+            ),
+
+            const SizedBox(height: 20),
 
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                labelText: "Seu nome público",
+                labelText: "Novo nome",
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: loading ? null : saveUserName,
-                child: const Text("Salvar nome"),
-              ),
+            ElevatedButton(
+              onPressed: save,
+              child: const Text("Salvar"),
             ),
 
-            const SizedBox(height: 40),
+            const Spacer(),
 
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => AuthService().logout(),
-                child: const Text("Sair"),
-              ),
+            ElevatedButton(
+              onPressed: logout,
+              child: const Text("Logout"),
             ),
           ],
         ),

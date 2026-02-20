@@ -8,20 +8,28 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  String? currentUserName;
+
+  Stream<User?> get authStateChanges =>
+      _auth.authStateChanges();
 
   /// LOGIN
   Future<String?> login({
     required String email,
     required String password,
   }) async {
-
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
+
+      final cred =
+          await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+
+      await _loadUsername(cred.user!.uid);
+
       return null;
+
     } on FirebaseAuthException catch (e) {
       return e.message;
     }
@@ -32,18 +40,19 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-
     try {
-      final credential =
+
+      final cred =
           await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
+        email: email,
+        password: password,
       );
 
-      /// cria doc do usuário
-      await _db.collection("users").doc(credential.user!.uid).set({
-        "userName": "",
-        "email": email
+      await _db.collection("users")
+          .doc(cred.user!.uid)
+          .set({
+        "email": email,
+        "username": "",
       });
 
       return null;
@@ -54,26 +63,34 @@ class AuthService {
   }
 
   /// SALVAR USERNAME
-  Future<void> saveUserName(String name) async {
+  Future<void> updateUsername(String name) async {
 
     final user = currentUser;
     if (user == null) return;
 
-    await _db.collection("users").doc(user.uid).update({
-      "userName": name.trim(),
-    });
+    await _db.collection("users")
+        .doc(user.uid)
+        .set({
+      "username": name,
+      "email": user.email,
+    }, SetOptions(merge: true));
+
+    currentUserName = name;
   }
 
-  /// PEGAR USERNAME
-  Future<String?> getUserName() async {
-
-    final user = currentUser;
-    if (user == null) return null;
+  /// usado internamente
+  Future<void> _loadUsername(String uid) async {
 
     final doc =
-        await _db.collection("users").doc(user.uid).get();
+        await _db.collection("users").doc(uid).get();
 
-    return doc.data()?['userName'];
+    currentUserName = doc.data()?["username"];
+  }
+
+  Future<String?> getUsername(String uid) async {
+    final doc =
+        await _db.collection("users").doc(uid).get();
+    return doc.data()?["username"];
   }
 
   Future<void> logout() async {

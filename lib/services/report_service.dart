@@ -1,84 +1,76 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/report_model.dart';
-import 'auth_service.dart';
 
 class ReportService {
 
   final _db = FirebaseFirestore.instance;
 
-  /// 🔥 CRIAR
-  Future createReport(Map<String, dynamic> data) async {
-    await _db.collection("reports").add(data);
+  /// STREAM REPORTS
+  Stream<List<ReportModel>> getReports() {
+    return _db
+        .collection("reports")
+        .orderBy("createdAt", descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) =>
+                ReportModel.fromFirestore(doc))
+            .toList());
   }
 
-  /// 🔥 EDITAR
-  Future updateReport({
+  /// CRIAR REPORT
+  Future<void> createReport(ReportModel report) async {
+
+    await _db.collection("reports").add(
+          report.toMap(),
+        );
+  }
+
+  /// EDITAR REPORT
+  Future<void> editReport({
     required String reportId,
-    required String category,
     required String description,
+    required String category,
   }) async {
 
-    await _db.collection("reports").doc(reportId).update({
-      "category": category,
+    await _db.collection("reports")
+        .doc(reportId)
+        .update({
       "description": description,
+      "category": category,
     });
   }
 
-  /// 🔥 EXCLUIR
-  Future deleteReport(String reportId) async {
-
-    await _db.collection("reports").doc(reportId).delete();
+  /// DELETAR REPORT
+  Future<void> deleteReport(String id) async {
+    await _db.collection("reports").doc(id).delete();
   }
 
-  /// 🔥 STREAM
-  Stream<List<ReportModel>> getReports({String? category}) {
-
-    Query query = _db
-        .collection("reports")
-        .orderBy("createdAt", descending: true);
-
-    if (category != null && category != "Todos") {
-      query = query.where("category", isEqualTo: category);
-    }
-
-    return query.snapshots().map((snapshot) {
-
-      return snapshot.docs
-          .map((doc) => ReportModel.fromFirestore(doc))
-          .toList();
-    });
-  }
-
-  /// 🔥 LIKE
-  Future toggleLike(String reportId) async {
-
-    final user = AuthService().currentUser;
-    if (user == null) return;
+  /// LIKE ÚNICO
+  Future<void> addInteraction({
+    required String reportId,
+    required String userId,
+    required String type,
+  }) async {
 
     final likeRef = _db
         .collection("reports")
         .doc(reportId)
         .collection("likes")
-        .doc(user.uid);
+        .doc(userId);
 
-    final doc = await likeRef.get();
+    final alreadyLiked = await likeRef.get();
 
-    if (doc.exists) {
+    if (alreadyLiked.exists) return;
 
-      await likeRef.delete();
+    await likeRef.set({
+      "likedAt": Timestamp.now(),
+    });
 
-      _db.collection("reports").doc(reportId).update({
-        "likesCount": FieldValue.increment(-1)
-      });
-
-    } else {
-
-      await likeRef.set({});
-
-      _db.collection("reports").doc(reportId).update({
-        "likesCount": FieldValue.increment(1)
-      });
-    }
+    await _db.collection("reports")
+        .doc(reportId)
+        .update({
+      "likesCount":
+          FieldValue.increment(1),
+    });
   }
 }
