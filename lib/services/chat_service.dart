@@ -5,14 +5,14 @@ class ChatService {
 
   final _db = FirebaseFirestore.instance;
 
-  /// 🔥 GERAR ID DO CHAT ENTRE DOIS USUÁRIOS
+  ///  GERAR ID DO CHAT ENTRE DOIS USUÁRIOS
   String generateChatId(String user1, String user2) {
     return user1.hashCode <= user2.hashCode
         ? "${user1}_$user2"
         : "${user2}_$user1";
   }
 
-  /// 🔥 ENVIAR MENSAGEM
+  ///  ENVIAR MENSAGEM
   Future<void> sendMessage({
     required String receiverId,
     required String message,
@@ -34,7 +34,7 @@ class ChatService {
     });
   }
 
-  /// 🔥 STREAM DE MENSAGENS
+  ///  STREAM DE MENSAGENS
   Stream<QuerySnapshot> getMessages(String receiverId) {
 
     final user = AuthService().currentUser;

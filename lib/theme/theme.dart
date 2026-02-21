@@ -3,14 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
 
-  /// 🌌 CORES BASE
+  ///  CORES BASE
   static const primary = Color(0xFF6366F1);
   static const accent = Color(0xFF22D3EE);
   static const background = Color(0xFF020617);
   static const surface = Color(0xFF0F172A);
   static const glass = Color(0xFF1E293B);
 
-  /// 🌑 DARK THEME PROFISSIONAL
+  ///  DARK THEME 
   static ThemeData darkTheme = ThemeData(
 
     useMaterial3: true,
@@ -24,13 +24,13 @@ class AppTheme {
       surface: surface,
     ),
 
-    /// 🔤 TIPOGRAFIA PREMIUM
+    ///  TIPOGRAFIA 
     textTheme: GoogleFonts.spaceGroteskTextTheme().apply(
       bodyColor: Colors.white,
       displayColor: Colors.white,
     ),
 
-    /// 📦 CARDS GLASS STYLE
+    ///  CARDS GLASS STYLE
     cardTheme: CardThemeData(
       elevation: 10,
       color: glass.withOpacity(0.65),
@@ -40,7 +40,7 @@ class AppTheme {
       ),
     ),
 
-    /// 🔘 BOTÕES MODERNOS
+    ///  BOTÕES MODERNOS
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -54,7 +54,7 @@ class AppTheme {
       ),
     ),
 
-    /// 🧊 INPUTS MODERNOS
+    ///  INPUTS MODERNOS
     inputDecorationTheme: InputDecorationTheme(
 
       filled: true,
@@ -74,7 +74,7 @@ class AppTheme {
       hintStyle: const TextStyle(color: Colors.white38),
     ),
 
-    /// 📱 APPBAR FUTURISTA
+    ///  APPBAR FUTURISTA
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -86,7 +86,7 @@ class AppTheme {
       ),
     ),
 
-    /// 🌊 BOTTOM NAV MODERNO
+    ///  BOTTOM NAV MODERNO
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: surface,
       selectedItemColor: accent,
@@ -96,7 +96,7 @@ class AppTheme {
     ),
   );
 
-  /// 🌈 GRADIENTE TECNOLÓGICO GLOBAL
+  ///  GRADIENTE TECNOLÓGICO GLOBAL
   static LinearGradient mainGradient = const LinearGradient(
     colors: [
       Color(0xFF6366F1),

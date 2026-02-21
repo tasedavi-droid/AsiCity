@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthGuard extends StatelessWidget {
-
   final Widget child;
 
   const AuthGuard({
@@ -13,26 +13,23 @@ class AuthGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return StreamBuilder(
+    return StreamBuilder<User?>(
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
 
-        /// 🔄 Loading
+        /// loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        /// ❌ Não logado
+        /// não logado
         if (!snapshot.hasData) {
           return const LoginScreen();
         }
 
-        /// ✅ Logado
+        /// logado
         return child;
       },
     );

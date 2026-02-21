@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -10,86 +9,63 @@ class ProfileScreen extends StatefulWidget {
       _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState
+    extends State<ProfileScreen> {
 
   final controller = TextEditingController();
-  String? currentName;
-  bool loading = true;
+
+  String? currentUsername;
 
   @override
   void initState() {
     super.initState();
-    loadUser();
+    loadUsername();
   }
 
-  Future<void> loadUser() async {
+  Future<void> loadUsername() async {
 
     final user = AuthService().currentUser;
+    if (user == null) return;
 
-    if (user != null) {
-      currentName =
-          await AuthService().getUsername(user.uid);
-    }
+    final username =
+        await AuthService().getUsername(user.uid);
 
-    setState(() => loading = false);
+    setState(() => currentUsername = username);
   }
 
-  Future<void> save() async {
+  Future<void> updateUsername() async {
 
     if (controller.text.trim().isEmpty) return;
 
     await AuthService()
         .updateUsername(controller.text.trim());
 
+    await loadUsername();
     controller.clear();
-    await loadUser();
-  }
-
-  Future<void> logout() async {
-
-    await AuthService().logout();
-
-    if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
-      ),
-      (_) => false,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
 
-    if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: const Text("Perfil")),
 
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
 
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
           children: [
 
             Text(
-              "Nome atual:",
-              style: Theme.of(context).textTheme.titleMedium,
+              "Username atual:",
+              style: TextStyle(color: Colors.grey[400]),
             ),
 
-            const SizedBox(height: 8),
-
             Text(
-              currentName ?? "Sem nome definido",
-              style: const TextStyle(fontSize: 18),
+              currentUsername ?? "...",
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 20),
@@ -97,22 +73,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                labelText: "Novo nome",
+                labelText: "Novo username",
               ),
             ),
 
-            const SizedBox(height: 20),
-
             ElevatedButton(
-              onPressed: save,
-              child: const Text("Salvar"),
+              onPressed: updateUsername,
+              child: const Text("Atualizar"),
             ),
 
             const Spacer(),
 
             ElevatedButton(
-              onPressed: logout,
-              child: const Text("Logout"),
+              onPressed: () async {
+                await AuthService().logout();
+              },
+              child: const Text("Sair"),
             ),
           ],
         ),

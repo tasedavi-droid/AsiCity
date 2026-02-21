@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
 import '../services/auth_service.dart';
@@ -33,29 +34,43 @@ class _CreateReportScreenState
     final user = AuthService().currentUser;
     if (user == null) return;
 
-    final username =
-        await AuthService().getUsername(user.uid);
+    if (controller.text.trim().isEmpty) return;
 
     setState(() => loading = true);
 
-    final report = ReportModel(
-      id: "",
-      category: selectedCategory,
-      description: controller.text.trim(),
-      lat: 0,
-      lng: 0,
-      userId: user.uid,
-      userName: username,
-      createdAt: null,
-    );
+    try {
 
-    await ReportService().createReport(report);
+      final username =
+          await AuthService().getUsername(user.uid) ?? "Usuário";
 
+      final report = ReportModel(
+        id: "",
+        category: selectedCategory,
+        description: controller.text.trim(),
+        userId: user.uid,
+        userName: username,
+        createdAt: Timestamp.now(),
+      );
+
+      await ReportService().createReport(report);
+
+      if (!mounted) return;
+
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/main_nav',
+        (_) => false,
+      );
+
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
+  
+  
     setState(() => loading = false);
-
-    if (!mounted) return;
-
-    Navigator.pop(context);
+  
   }
 
   @override
@@ -66,21 +81,19 @@ class _CreateReportScreenState
 
       body: Padding(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           children: [
 
-            DropdownButtonFormField(
+            DropdownButtonFormField<String>(
               value: selectedCategory,
               items: categories
                   .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c),
-                      ))
+                value: c,
+                child: Text(c),
+              ))
                   .toList(),
               onChanged: (v) =>
-                  setState(() =>
-                      selectedCategory = v!),
+                  setState(() => selectedCategory = v!),
             ),
 
             const SizedBox(height: 16),
@@ -90,17 +103,20 @@ class _CreateReportScreenState
               maxLines: 5,
               decoration: const InputDecoration(
                 hintText: "Descreva o problema",
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            ElevatedButton(
-              onPressed:
-                  loading ? null : createReport,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Publicar"),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: loading ? null : createReport,
+                child: loading
+                    ? const CircularProgressIndicator()
+                    : const Text("Publicar"),
+              ),
             ),
           ],
         ),

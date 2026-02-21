@@ -6,94 +6,74 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// USER ATUAL
   User? get currentUser => _auth.currentUser;
 
-  String? currentUserName;
-
+  /// STREAM LOGIN
   Stream<User?> get authStateChanges =>
       _auth.authStateChanges();
 
-  /// LOGIN
-  Future<String?> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
+  /// ✅ LOGIN 
+  Future<User?> login(String email, String password) async {
 
-      final cred =
-          await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    final cred =
+        await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
-      await _loadUsername(cred.user!.uid);
-
-      return null;
-
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    }
+    return cred.user;
   }
 
   /// REGISTER
-  Future<String?> register({
-    required String email,
-    required String password,
-  }) async {
-    try {
+  Future<User?> register(
+    String email,
+    String password,
+    String username,
+  ) async {
 
-      final cred =
-          await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    final cred =
+        await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
-      await _db.collection("users")
-          .doc(cred.user!.uid)
-          .set({
-        "email": email,
-        "username": "",
-      });
+    await _db.collection("users").doc(cred.user!.uid).set({
+      "username": username,
+      "email": email,
+      "createdAt": Timestamp.now(),
+    });
 
-      return null;
-
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    }
+    return cred.user;
   }
 
-  /// SALVAR USERNAME
-  Future<void> updateUsername(String name) async {
+  /// LOGOUT
+  Future<void> logout() async {
+    await _auth.signOut();
+  }
+
+  /// PEGAR USERNAME
+  Future<String?> getUsername(String uid) async {
+
+    final doc =
+        await _db.collection("users").doc(uid).get();
+
+    if (!doc.exists) return null;
+
+    final data = doc.data();
+    if (data == null) return null;
+
+    return data["username"];
+  }
+
+  /// ATUALIZAR USERNAME
+  Future<void> updateUsername(String username) async {
 
     final user = currentUser;
     if (user == null) return;
 
-    await _db.collection("users")
-        .doc(user.uid)
-        .set({
-      "username": name,
-      "email": user.email,
-    }, SetOptions(merge: true));
-
-    currentUserName = name;
-  }
-
-  /// usado internamente
-  Future<void> _loadUsername(String uid) async {
-
-    final doc =
-        await _db.collection("users").doc(uid).get();
-
-    currentUserName = doc.data()?["username"];
-  }
-
-  Future<String?> getUsername(String uid) async {
-    final doc =
-        await _db.collection("users").doc(uid).get();
-    return doc.data()?["username"];
-  }
-
-  Future<void> logout() async {
-    await _auth.signOut();
+    await _db.collection("users").doc(user.uid).update({
+      "username": username,
+    });
   }
 }

@@ -6,7 +6,7 @@ class CommentService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
-  /// 🔥 CRIAR COMENTÁRIO
+  ///  CRIAR COMENTÁRIO
   Future createComment(String reportId, String text) async {
 
     final uid = _auth.currentUser!.uid;
@@ -22,7 +22,7 @@ class CommentService {
     });
   }
 
-  /// 🔥 LISTAR COMENTÁRIOS
+  ///  LISTAR COMENTÁRIOS
   Stream<QuerySnapshot<Map<String, dynamic>>> getComments(String reportId) {
 
     return _db
@@ -33,7 +33,7 @@ class CommentService {
         .snapshots();
   }
 
-  /// 🔥 CRIAR REPLY
+  ///  CRIAR REPLY
   Future createReply(
       String reportId,
       String commentId,
@@ -55,7 +55,7 @@ class CommentService {
     });
   }
 
-  /// 🔥 LISTAR REPLIES
+  ///  LISTAR REPLIES
   Stream<QuerySnapshot<Map<String, dynamic>>> getReplies(
       String reportId,
       String commentId,

@@ -41,7 +41,7 @@ class _CommentTileState extends State<CommentTile> {
           ),
         ),
 
-        /// 🔥 LISTA DE REPLIES
+        ///  LISTA DE REPLIES
         StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: service.getReplies(widget.reportId, commentId),
           builder: (_, snapshot) {

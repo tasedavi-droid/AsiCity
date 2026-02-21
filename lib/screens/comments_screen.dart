@@ -36,7 +36,7 @@ class _CommentsScreenState
         .doc(widget.reportId)
         .collection("comments")
         .add({
-      "text": controller.text,
+      "text": controller.text.trim(),
       "userName": username ?? "Usuário",
       "createdAt": Timestamp.now(),
     });
@@ -71,8 +71,7 @@ class _CommentsScreenState
 
                 if (!snapshot.hasData) {
                   return const Center(
-                      child:
-                          CircularProgressIndicator());
+                      child: CircularProgressIndicator());
                 }
 
                 final docs = snapshot.data!.docs;
@@ -81,12 +80,13 @@ class _CommentsScreenState
                   children: docs.map((doc) {
 
                     final data =
-                        doc.data() as Map<String,
-                            dynamic>;
+                        doc.data() as Map<String, dynamic>;
 
                     return ListTile(
-                      title: Text(data["userName"]),
-                      subtitle: Text(data["text"]),
+                      title: Text(
+                          data["userName"] ?? "Usuário"),
+                      subtitle:
+                          Text(data["text"] ?? ""),
                     );
                   }).toList(),
                 );
@@ -94,23 +94,27 @@ class _CommentsScreenState
             ),
           ),
 
-          Row(
-            children: [
+          SafeArea(
+            child: Row(
+              children: [
 
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  decoration:
-                      const InputDecoration(
-                          hintText: "Comentar..."),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: "Comentar...",
+                      contentPadding:
+                          EdgeInsets.all(12),
+                    ),
+                  ),
                 ),
-              ),
 
-              IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: sendComment,
-              )
-            ],
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: sendComment,
+                )
+              ],
+            ),
           )
         ],
       ),

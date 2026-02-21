@@ -18,16 +18,16 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> screens = const [
 
-    /// 📄 Feed Reports
+    ///  Feed Reports
     ReportListScreen(),
 
-    /// ➕ Criar Report
+    ///  Criar Report
     CreateReportScreen(),
 
-    /// 💬 Comunidade
+    ///  Comunidade
     CommunityChatScreen(),
 
-    /// 👤 Perfil
+    ///  Perfil
     ProfileScreen(),
   ];
 
